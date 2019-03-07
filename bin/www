@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('my-socket:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+
+var server = http.createServer(app);
+// websocket服务器
+
+
+// var server = require('http').Server(app);这个可以不需要
+
+var socketServer = require('ws').Server;
+var set;
+var wss = new socketServer({server: server, port: 8080});
+wss.on('connection', function (client) {
+    // on用来监听事件
+    client.on('message', function (_message) {
+        // _message是用户发过来的消息
+        // var _messageObj = JSON.parse(_message);//将消息传过来
+        // console.log(_message);//打印出来
+        // 同时将_message返回出去
+        // client.send(set);
+        // 可以利用定时器不断的给数据给对方
+        // setInterval(()=>{
+        //     client.send(_message)
+        // },2000);
+        // //status = 1 表示正常聊天
+        // _messageObj.status = 1;
+    	// this.message = _messageObj;
+        // //把客户端的消息广播给所有在线的用户
+        wss.broadcast(_message);
+    });
+
+    // // 退出聊天  
+    client.on('close', function() {  
+        try{
+            // this.message = this.message || {};
+            // // status = 0 表示退出聊天
+            // this.message.status = 0;
+            //把客户端的消息广播给所有在线的用户
+            wss.broadcast('没有内容了');  
+        }catch(e){  
+            console.log('刷新页面了');  
+        }  
+    });  
+});
+
+//定义广播方法，可以将得到的东西在发回去，给客户端，从而实现聊天的功能
+wss.broadcast = function broadcast(_messageObj) {  
+    // set=JSON.stringify(Array.from(wss.clients))
+    wss.clients.forEach(function(client) { 
+
+        client.send(_messageObj)
+    });  
+}; 
+// websocket已经连接成功了
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

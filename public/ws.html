@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>websocket定义客户端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        ul,
+        li {
+            list-style: none;
+        }
+
+        #list {
+            height: 400px;
+            width: 600px;
+            margin: 40px auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #list li {
+            float: left;
+            clear: both;
+            margin-bottom: 10px;
+            padding: 10px;
+            line-height: 16px;
+            background-color: #ddd;
+            border-radius: 3px;
+        }
+
+        #list li:nth-child(2n) {
+            float: right;
+            background-color: #e4393c;
+            color: #fff;
+        }
+
+        #content {
+            text-align: center;
+        }
+
+        #ipt {
+            width: 300px;
+            height: 80px;
+        }
+    </style>
+</head>
+
+<body>
+    <ul id="list">
+    </ul>
+    <div id="content">
+        <textarea id="ipt"></textarea><button id="send">发送</button>
+    </div>
+    <script>
+        // 可以用websocket来制作聊天的软件
+        (() => {
+            if (!WebSocket) {
+                //这个不存在的话就跳出函数不执行
+                return false;
+            }
+            //连接 socket 服务器，客户端到服务端和ajax没有什么区别的
+            var socket = new WebSocket('ws://10.3.143.89:8080');
+            let send = document.querySelector('#send');
+            let ipt = document.querySelector('#ipt');
+            let list = document.querySelector('#list');
+            let arr = [];
+            send.onclick = function (e) {
+                e.preventDefault();
+                let _ipt = ipt.value;
+                if (_ipt.trim().length == 0) {
+                    return;
+                }
+                // 发送消息给后端
+                socket.send(_ipt);
+                ipt.value = "";
+                ipt.focus();
+                //监听服务端广播过来的消息,onmessage用来接收返回过来的消息
+                socket.onmessage = function (msg) {
+                    // 这里接收返回过来的数据
+                    // console.log(msg.data);
+                    arr.push(msg.data);
+                    list.innerHTML = arr.map((item, index) => {
+                        return `<li data-id="${index}">${item}</li>`
+                    }).join('');
+                }
+            };
+            document.onkeydown = function (e) {
+                if (e.keyCode == 13) {
+                    let _ipt = ipt.value;
+                    if (_ipt.trim().length == 0) {
+                        return;
+                    }
+                    // 发送消息给后端
+                    socket.send(_ipt);
+                    ipt.value = "";
+                    ipt.focus();
+                    //监听服务端广播过来的消息,onmessage用来接收返回过来的消息
+                    socket.onmessage = function (msg) {
+                        // 这里接收返回过来的数据
+                        // console.log(msg.data);
+                        arr.push(msg.data);
+                        list.innerHTML = arr.map((item, index) => {
+                            return `<li data-id="${index}">${item}</li>`
+                        }).join('');
+                    }
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>
